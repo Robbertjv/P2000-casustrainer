@@ -6,11 +6,28 @@
 <style>
 :root{--bg:#101820;--panel:#192631;--panel2:#223442;--text:#f2f5f7;--muted:#b8c5ce;--accent:#ffb000;--good:#83d6a3;--bad:#ff8b83;--line:#344957}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,Arial,sans-serif}header{padding:28px max(20px,calc((100% - 1050px)/2));background:#172631;border-bottom:3px solid var(--accent)}header small{color:var(--accent);font-weight:800;letter-spacing:.12em;text-transform:uppercase}h1{margin:.2em 0;font-size:clamp(1.7rem,4vw,2.6rem)}header p{margin:.3em 0;color:var(--muted)}main{max-width:1050px;margin:24px auto;padding:0 18px 50px}.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tag{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:6px 11px;font-size:.85rem;color:var(--muted)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:720px){.grid{grid-template-columns:1fr}}section,.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}h2{font-size:1.25rem;margin:0 0 12px}h3{font-size:1rem;margin:14px 0 6px;color:var(--accent)}p{margin:.45em 0}.muted{color:var(--muted)}.call{border-left:4px solid var(--accent);padding:12px 14px;background:#263744;border-radius:6px;margin:12px 0}.stage{display:none}.stage.active{display:block}.controls{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}button{border:0;border-radius:8px;padding:11px 16px;font-weight:750;cursor:pointer;background:var(--accent);color:#1b2025}button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button:disabled{opacity:.35;cursor:not-allowed}label{display:block;font-weight:700;margin:12px 0 5px}textarea,input,select{width:100%;border-radius:8px;border:1px solid var(--line);background:#0f1920;color:var(--text);padding:11px;font:inherit}textarea{min-height:90px;resize:vertical}.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.checks label{font-weight:500;background:#223442;padding:9px;border-radius:8px;margin:0}.checks input{width:auto;margin-right:8px}.feedback{display:none;padding:12px;border-radius:8px;background:#243a32;border:1px solid #47795d;margin-top:12px}.feedback.show{display:block}.warn{background:#3a3022;border-color:#84632d}.score{font-weight:800;color:var(--good)}.steps{display:flex;gap:6px;margin:16px 0}.steps span{height:6px;flex:1;background:#344957;border-radius:8px}.steps span.on{background:var(--accent)}ul{padding-left:20px}li{margin:5px 0}.small{font-size:.88rem}
+
+#liveincidents{border:2px solid var(--accent);margin-bottom:20px}
+.resultcard{background:#223442;border:1px solid var(--line);padding:14px;border-radius:10px;margin:10px 0}
+.resultcard h3{margin:0 0 6px}.resultcard button{margin-top:8px}
+.sourceurl{overflow-wrap:anywhere}.fact{padding:9px;background:#0f1920;border-radius:7px;margin:6px 0}
 </style>
 </head>
 <body>
 <header><small>Interactieve oefenomgeving</small><h1>P2000-casustrainer</h1><p>Opleiding Bevelvoerder · waarnemen, besluiten, aansturen, rapporteren en bijstellen</p></header>
 <main>
+<section id="liveincidents">
+<h2>Live incident zoeken – Zwaailicht</h2>
+<p>Zoek openbare P2000-incidenten en open het beschikbare dossier. Gebruik dit als bronmateriaal voor een incidentcasus; de automatische reconstructie is niet hetzelfde als een officieel incidentverslag.</p>
+<div class="grid">
+<div><label for="liveq">Zoekterm / incidenttype</label><input id="liveq" placeholder="Bijv. woningbrand, voertuigbrand, ongeval"></div>
+<div><label for="livecity">Plaats (optioneel)</label><input id="livecity" placeholder="Bijv. Dinxperlo, Arnhem"></div>
+</div>
+<div class="controls"><button id="livesearch">Zoek incidenten</button><span class="muted small" id="livestatus">Bron: Zwaailicht openbare API</span></div>
+<div id="liveresults" aria-live="polite"></div>
+<div id="livecontext"></div>
+<p class="small muted">Let op: de API levert Zwaailichts interpretatie van P2000-alarmeringen, niet de letterlijke pagertekst of MDT-/AC-kladblokregels. Locaties kunnen onnauwkeurig zijn. Controleer altijd de oorspronkelijke bron en markeer onbekende informatie als onbekend.</p>
+</section>
 <div class="bar"><span class="tag">Kerntaak 1 · Uitruk</span><span class="tag">Kerntaak 2 · Verkennen</span><span class="tag">Kerntaak 3 · Inzetten</span><span class="tag">Kerntaak 4 · Nazorg</span><span class="tag">Casus 01 · Brand in werkplaats</span></div>
 <div class="steps" id="progress"><span class="on"></span><span></span><span></span><span></span><span></span><span></span></div>
 <section class="stage active" data-stage="0"><h2>1. P2000-melding en uitruk</h2>
@@ -69,5 +86,54 @@ let current=0;const stages=[...document.querySelectorAll('.stage')],bars=[...doc
 function show(){stages.forEach((s,i)=>s.classList.toggle('active',i===current));bars.forEach((b,i)=>b.classList.toggle('on',i<=current));document.getElementById('prev').disabled=current===0;document.getElementById('next').textContent=current===stages.length-1?'Opnieuw beginnen':'Volgende →';document.getElementById('counter').textContent='Onderdeel '+(current+1)+' van '+stages.length;window.scrollTo({top:0,behavior:'smooth'});}
 document.getElementById('prev').onclick=()=>{if(current>0){current--;show()}};
 document.getElementById('next').onclick=()=>{if(current<stages.length-1){current++;show()}else{current=0;show()}};
+
+async function liveSearch(){
+ const q=document.getElementById('liveq').value.trim();
+ const city=document.getElementById('livecity').value.trim();
+ const status=document.getElementById('livestatus'), out=document.getElementById('liveresults'), ctx=document.getElementById('livecontext');
+ if(!q){status.textContent='Vul een zoekterm in.';return}
+ out.innerHTML='';ctx.innerHTML='';status.textContent='Zoeken…';
+ const p=new URLSearchParams({q,limit:'20'});if(city)p.set('city',city);
+ try{
+  const res=await fetch('https://zwaailicht.nl/api/v1/search?'+p.toString(),{headers:{'Accept':'application/json'}});
+  if(!res.ok)throw new Error('API antwoordde met HTTP '+res.status);
+  const data=await res.json();const rows=Array.isArray(data.results)?data.results:[];
+  if(!rows.length){status.textContent='Geen resultaten gevonden. Probeer een andere zoekterm of plaats.';return}
+  status.textContent=rows.length+' resultaten gevonden. Kies een incident om het dossier te openen.';
+  rows.forEach((item)=>{
+   const card=document.createElement('div');card.className='resultcard';
+   const title=item.title||item.name||item.description||'P2000-resultaat';
+   const kind=item.type||'resultaat';
+   const place=item.city||item.place||item.location||'Plaats niet vermeld';
+   const when=item.time||item.timestamp||item.created_at||'Tijdstip niet vermeld';
+   const id=item.id;
+   card.innerHTML='<h3></h3><div class="muted small"></div>';
+   card.querySelector('h3').textContent=title;
+   card.querySelector('div').textContent=kind+' · '+place+' · '+when;
+   if(kind==='incident'&&id){
+    const b=document.createElement('button');b.textContent='Open incidentdossier';b.onclick=()=>loadIncident(id,title);card.appendChild(b);
+   }else if(id){
+    const b=document.createElement('button');b.textContent='Bekijk melding';b.className='secondary';b.onclick=()=>loadAlert(id,title);card.appendChild(b);
+   }
+   out.appendChild(card);
+  });
+ }catch(e){status.textContent='Ophalen mislukt: '+e.message+'. Mogelijk blokkeert de browser de API-aanvraag (CORS) of is de dienst tijdelijk niet bereikbaar. Open de API-documentatie om de bron handmatig te raadplegen.';out.innerHTML='<p><a href="https://zwaailicht.nl/api" target="_blank" rel="noopener">Open Zwaailicht API-documentatie</a></p>'}
+}
+async function showApiResource(path,title){
+ const box=document.getElementById('livecontext');box.innerHTML='<h3></h3><p class="muted">Dossier ophalen…</p>';box.querySelector('h3').textContent=title;
+ try{
+  const res=await fetch('https://zwaailicht.nl/api/v1/'+path,{headers:{'Accept':'application/json'}});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const data=await res.json();
+  const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;background:#0f1920;padding:14px;border-radius:9px;font-size:.82rem;max-height:560px;overflow:auto';pre.textContent=JSON.stringify(data,null,2);
+  box.innerHTML='';const h=document.createElement('h3');h.textContent=title;box.appendChild(h);
+  const note=document.createElement('div');note.className='call';note.textContent='Brondata hieronder. Let op het onderscheid tussen waargenomen P2000-gegevens, automatisch afgeleide velden en AI-gegenereerde samenvattingen.';box.appendChild(note);
+  const link=document.createElement('a');link.href='https://zwaailicht.nl/api/v1/'+path;link.target='_blank';link.rel='noopener';link.textContent='Open dit API-dossier rechtstreeks';box.appendChild(link);box.appendChild(pre);
+ }catch(e){box.innerHTML='<p class="muted">Dossier kon niet worden opgehaald: '+e.message+'. Probeer de API-link rechtstreeks.</p>'}
+}
+function loadIncident(id,title){showApiResource('incidents/'+encodeURIComponent(id)+'/context','Incidentdossier: '+title)}
+function loadAlert(id,title){showApiResource('alerts/'+encodeURIComponent(id),'P2000-melding: '+title)}
+document.getElementById('livesearch').addEventListener('click',liveSearch);
+document.getElementById('liveq').addEventListener('keydown',e=>{if(e.key==='Enter')liveSearch()});
 </script>
 </body></html>
