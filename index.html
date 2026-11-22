@@ -131,7 +131,17 @@ async function showApiResource(path,title){
   const link=document.createElement('a');link.href='https://zwaailicht.nl/api/v1/'+path;link.target='_blank';link.rel='noopener';link.textContent='Open dit API-dossier rechtstreeks';box.appendChild(link);box.appendChild(pre);
  }catch(e){box.innerHTML='<p class="muted">Dossier kon niet worden opgehaald: '+e.message+'. Probeer de API-link rechtstreeks.</p>'}
 }
-function loadIncident(id,title){showApiResource('incidents/'+encodeURIComponent(id)+'/context','Incidentdossier: '+title)}
+function loadIncident(id,title){
+ const box=document.getElementById('livecontext');box.innerHTML='';
+ const h=document.createElement('h3');h.textContent='Incidentdossier: '+title;box.appendChild(h);
+ const nav=document.createElement('div');nav.className='controls';
+ [['context','Volledig dossier'],['provenance','Herkomst per gegeven'],['alerts','Gekoppelde P2000-meldingen'],['news','Gekoppeld nieuws'],['related','Vergelijkbare incidenten']].forEach(([part,label])=>{
+  const b=document.createElement('button');b.className='secondary';b.textContent=label;
+  b.onclick=()=>showApiResource('incidents/'+encodeURIComponent(id)+'/'+part,label+' – '+title);nav.appendChild(b);
+ });
+ box.appendChild(nav);
+ showApiResource('incidents/'+encodeURIComponent(id)+'/context','Volledig dossier – '+title);
+}
 function loadAlert(id,title){showApiResource('alerts/'+encodeURIComponent(id),'P2000-melding: '+title)}
 document.getElementById('livesearch').addEventListener('click',liveSearch);
 document.getElementById('liveq').addEventListener('keydown',e=>{if(e.key==='Enter')liveSearch()});
